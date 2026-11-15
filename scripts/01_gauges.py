@@ -35,16 +35,20 @@ def load_daily(src, code):
 
 def check(sid):
     src, code = sid.split(":") if ":" in sid else ("eccc", sid)
-    d = clean_daily(load_daily(src, code))
+    raw = load_daily(src, code)
+    lev = raw.set_index("date")["level_m"].loc["2021-11-01":"2021-12-31"] if "level_m" in raw else None
+    lev_txt = f"level {lev.notna().sum()}/61 days, max {lev.max():.2f} m" if lev is not None and lev.notna().any() else "no level"
+    d = clean_daily(raw)
     valid = d["flow_m3s"].dropna()
     if valid.empty:
-        return dict(id=sid, start=None, end=None, years=0, pct_missing=None, nov2021="no flow data")
+        return dict(id=sid, start=None, end=None, years=0, pct_missing=None, nov2021="no flow data", level_nov_dec2021=lev_txt)
     span = d.loc[valid.index[0]:valid.index[-1]]
     nov = d.loc["2021-11-08":"2021-11-20", "flow_m3s"]
     return dict(id=sid, start=valid.index[0].year, end=valid.index[-1].year,
                 years=round(len(valid) / 365.25, 1),
                 pct_missing=round(100 * span["flow_m3s"].isna().mean(), 1),
-                nov2021=f"{nov.notna().sum()}/13 days, max {nov.max():.0f} m3/s" if nov.notna().any() else "NO")
+                nov2021=f"{nov.notna().sum()}/13 days, max {nov.max():.0f} m3/s" if nov.notna().any() else "NO",
+                level_nov_dec2021=lev_txt)
 
 
 def build():
