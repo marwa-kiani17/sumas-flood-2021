@@ -87,6 +87,14 @@ Coquihalla, Coldwater, Tulameen, Similkameen, Chilliwack, Englishman, Chehalis, 
 - **Record peaks are under-predicted.** Tree models cannot go beyond the flows seen in training, and Nov 2021 broke
   records on several rivers (for example the Similkameen peak was 932 m3/s). The 10-90% ranges also cover only about
   72-75% of observations instead of 80%.
+- **Attempted fix: LightGBM linear leaves** (can extrapolate in principle). Result: modestly better warnings
+  (POD 0.83/0.77/0.72 and CSI 0.61/0.46/0.44 at 1/2/3 days versus 0.80/0.74/0.66 and 0.54/0.49/0.42) and slightly
+  better 10-90% coverage (0.77/0.75/0.73), but slightly lower NSE (0.906/0.866/0.842 versus 0.924/0.894/0.864) and
+  **no improvement in peak size** (median error -16/-23/-26% versus -14/-17/-21%). Nov 2021 peaks are still
+  under-predicted by roughly 40-60% (Similkameen: median forecast 360 versus observed 932 m3/s), and the linear model
+  only warned on the Similkameen on the same day as persistence. The validation years contain no record floods, so
+  early stopping cannot tune extrapolation. The default model stays the standard LightGBM; the linear variant is
+  reported for comparison (`reports/results.md`).
 - Regulation of the gauges was judged from station names only. Several gauges failed or were estimated in Nov 2021.
 - The U-Net is trained on global flood chips, not BC farmland. It under-maps the solid flooded area on Sumas Prairie
   (flooded fields can look partly rough), and radar confuses flat wet fields and wet snow with water. The four

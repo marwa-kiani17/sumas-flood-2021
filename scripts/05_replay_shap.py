@@ -27,6 +27,8 @@ INTERIM, PROC, FIG = (ROOT / CFG["paths"][k] for k in ("interim", "processed", "
 REP = ROOT / "reports"
 MODELS = PROC / "models"
 r0, r1 = (pd.Timestamp(x) for x in CFG["dates"]["replay"])
+VAR = sys.argv[1] if len(sys.argv) > 1 else "full"   # model variant: full (default) or linear
+SUF = "" if VAR == "full" else f"_{VAR}"              # keeps the original figures; variants get a suffix
 
 preds = pd.read_parquet(PROC / "preds.parquet")
 flow = pd.read_parquet(INTERIM / "flow_daily.parquet")
@@ -47,8 +49,8 @@ for sid in nov_ids:
                   & preds["date"].between(r0, r1)].sort_values("date")
         tdate = g["date"] + pd.Timedelta(days=k)  # the day each forecast is FOR
         ax.plot(obs.index, obs.values, "k-", lw=2, label="observed")
-        ax.fill_between(tdate, g["full_q10"], g["full_q90"], alpha=0.3, color="C0", label="model 10-90%")
-        ax.plot(tdate, g["full_q50"], "C0-o", ms=3, label="model median")
+        ax.fill_between(tdate, g[f"{VAR}_q10"], g[f"{VAR}_q90"], alpha=0.3, color="C0", label="model 10-90%")
+        ax.plot(tdate, g[f"{VAR}_q50"], "C0-o", ms=3, label="model median")
         ax.plot(tdate, g["persistence"], "C1--", lw=1, label="persistence")
         for v, lab, c in ((q2, "Q2", "gray"), (q5, "Q5", "orange"), (q10, "Q10", "red")):
             ax.axhline(v, color=c, ls=":", lw=1)
@@ -57,30 +59,39 @@ for sid in nov_ids:
         ax.tick_params(axis="x", rotation=30, labelsize=8)
     axes[0].set_ylabel("flow (m3/s)")
     axes[0].legend(fontsize=7, loc="upper left")
-    fig.suptitle(f"Nov 2021 replay: {name[sid]} ({sid})")
+    fig.suptitle(f"Nov 2021 replay: {name[sid]} ({sid})  [model: {VAR}]")
     plt.tight_layout()
-    plt.savefig(FIG / f"nov2021_replay_{sid}.png", dpi=200)
+    plt.savefig(FIG / f"nov2021_replay_{sid}{SUF}.png", dpi=200)
     plt.close()
 
     # first issue day a warning fired
     w = preds[(preds["station"] == sid) & preds["date"].between(r0, r1)]
     first = {}
-    for variant in ("full", "no_future"):
+    for variant in (VAR, "no_future"):
         fire = w[w[f"{variant}_q90"] > q5]["date"]
         first[variant] = fire.min()
     fire_p = w[w["persistence"] > q5]["date"]
     first["persistence"] = fire_p.min()
     flood_day = obs.loc["2021-11-08":"2021-11-20"][lambda s: s > q5].index.min()
     row = dict(river=sid, name=name[sid], Q5=q5, obs_peak=obs.loc["2021-11-08":"2021-11-20"].max(),
-               first_obs_above_Q5=flood_day, warn_full=first["full"], warn_no_future=first["no_future"],
+               first_obs_above_Q5=flood_day, **{f"warn_{VAR}": first[VAR]}, warn_no_future=first["no_future"],
                warn_persistence=first["persistence"])
-    for m in ("full", "no_future"):
+    for m in (VAR, "no_future"):
         row[f"days_gained_{m}"] = (first["persistence"] - first[m]).days if pd.notna(first[m]) and pd.notna(first["persistence"]) else np.nan
     rows.append(row)
 rep = pd.DataFrame(rows)
-rep.to_csv(REP / "tables_nov2021_warning.csv", index=False)
+rep.to_csv(REP / f"tables_nov2021_warning{SUF}.csv", index=False)
 pd.set_option("display.width", 250)
-print("\nFirst day the warning fired (issue date):\n", rep.to_string(index=False))
+print(f"\nFirst day the warning fired (issue date), model = {VAR}:\n", rep.to_string(index=False))
+print("peak forecast (lead 1, median) vs observed peak:")
+for sid in nov_ids:
+    g = preds[(preds["station"] == sid) & (preds["lead"] == 1) & preds["date"].between(r0, r1)]
+    print(f"  {sid}: model median peak {g[f'{VAR}_q50'].max():.0f}, q90 peak {g[f'{VAR}_q90'].max():.0f}, "
+          f"observed {flow[(flow['station'] == sid)].set_index('date')['flow_m3s'].loc[r0:r1].max():.0f}")
+
+if VAR != "full":  # SHAP's TreeExplainer does not support linear-leaf trees
+    print("\nSHAP skipped for non-default variants.")
+    sys.exit()
 
 # ---------- SHAP ----------
 feats = pd.read_parquet(PROC / "features.parquet")

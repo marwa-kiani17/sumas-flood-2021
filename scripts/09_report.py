@@ -48,10 +48,13 @@ if warn is not None:
 
 pe = read("tables_peak_errors.csv")
 if pe is not None:
-    g = pe.groupby("lead").agg(events=("peak_err_pct", "size"),
-                               median_abs_peak_error_pct=("peak_err_pct", lambda s: s.abs().median()),
-                               median_abs_timing_days=("timing_err_days", lambda s: s.abs().median())).reset_index()
-    out += ["### Peak size and timing error for floods above Q2 (median model)\n", md(g, 2), ""]
+    if "variant" not in pe:
+        pe["variant"] = "full"
+    g = pe.groupby(["variant", "lead"]).agg(events=("peak_err_pct", "size"),
+                                            median_abs_peak_error_pct=("peak_err_pct", lambda s: s.abs().median()),
+                                            median_signed_peak_error_pct=("peak_err_pct", "median"),
+                                            median_abs_timing_days=("timing_err_days", lambda s: s.abs().median())).reset_index()
+    out += ["### Peak size and timing error for floods above Q2 (median model; negative = under-predicted)\n", md(g, 2), ""]
 
 nov = read("tables_nov2021_warning.csv", dtype={"river": str})
 if nov is not None:
