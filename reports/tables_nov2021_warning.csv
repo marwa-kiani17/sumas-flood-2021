@@ -1,5 +1,6 @@
 river,name,Q5,obs_peak,first_obs_above_Q5,warn_full,warn_no_future,warn_persistence,days_gained_full,days_gained_no_future
-08MF068,Coquihalla R above Alexander Cr,265.0,479.0,2021-11-14,2021-11-12,2021-11-14,2021-11-14,2,0
-08LG010,Coldwater R at Merritt,82.6,239.0,2021-11-15,2021-11-12,2021-11-14,2021-11-15,3,1
-08NL024,Tulameen R at Princeton,226.6,639.0,2021-11-15,2021-11-12,2021-11-14,2021-11-15,3,1
-08NL038,Similkameen R near Hedley,466.3,932.0,2021-11-15,2021-11-13,2021-11-15,2021-11-15,2,0
+08MF068,Coquihalla R above Alexander Cr,265.0,479.0,2021-11-14,2021-11-11,2021-11-14,2021-11-14,3.0,0.0
+08LG010,Coldwater R at Merritt,82.6,239.0,2021-11-15,2021-11-12,2021-11-14,2021-11-15,3.0,1.0
+08NL024,Tulameen R at Princeton,226.6,639.0,2021-11-15,2021-11-12,2021-11-14,2021-11-15,3.0,1.0
+08NL038,Similkameen R near Hedley,466.3,932.0,2021-11-15,,,2021-11-15,,
+12213100,"Nooksack R at Ferndale, WA",929.9,1413.00832,2021-11-15,2021-11-12,2021-11-14,2021-11-15,3.0,1.0

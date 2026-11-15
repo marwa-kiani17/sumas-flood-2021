@@ -38,11 +38,19 @@ features:
 model:
   quantiles: [0.1, 0.5, 0.9]
 
+cv:
+  epochs: 30
+  batch_size: 8
+  lr: 0.001
+
 sumas:
   aoi: {lon_min: -122.35, lon_max: -122.05, lat_min: 48.98, lat_max: 49.15}
   before: ["2021-11-01", "2021-11-12"]
   during: ["2021-11-14", "2021-11-30"]
   late: ["2021-12-01", "2021-12-31"]
+  rel_orbit: 13                      # same Sentinel-1 track (descending) before, during and after
+  triptych: ["2021-11-04", "2021-11-16", "2021-12-10"]
+  otsu_db: -15.6                     # global Otsu threshold fitted on Sen1Floods11 train chips (step 6)
 
 # Stations chosen after name lookup + availability check (scripts/01_gauges.py --search/--check).
 # regime = my judgement from location/elevation (rain = coastal rain-fed, snow = interior snowmelt,
