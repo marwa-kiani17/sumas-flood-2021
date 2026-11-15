@@ -1,0 +1,60 @@
+# Central config. No absolute paths; everything is relative to the repo root.
+seed: 42
+
+paths:
+  raw: data/raw
+  interim: data/interim
+  processed: data/processed
+  figures: reports/figures
+  results: reports/results.md
+
+dates:
+  start: "1980-01-01"
+  end: "2023-12-31"
+  train: ["1981-01-01", "2012-12-31"]
+  valid: ["2013-01-01", "2016-12-31"]
+  test: ["2017-01-01", "2023-12-31"]
+  replay: ["2021-11-08", "2021-11-20"]
+
+sources:
+  geomet: "https://api.weather.gc.ca"
+  usgs: "https://waterservices.usgs.gov/nwis"
+  openmeteo: "https://archive-api.open-meteo.com/v1/archive"
+  stac: "https://planetarycomputer.microsoft.com/api/stac/v1"
+  sen1floods11: "gs://sen1floods11/v1.1/"
+
+openmeteo:
+  sleep_seconds: 1.0
+  points_per_basin: 1       # 1 = gauge point only (free-tier limits); raise to 3-5 later, cached chunks are reused
+  timezone: "America/Vancouver"
+
+features:
+  future_weather: true      # "perfect forecast" of rain/temp for t+1..t+3
+  lead_times: [1, 2, 3]
+  ar_storm: {rain_3day_mm: 50, min_temp_c: 2, months: [10, 11, 12, 1, 2]}
+
+model:
+  quantiles: [0.1, 0.5, 0.9]
+
+sumas:
+  aoi: {lon_min: -122.35, lon_max: -122.05, lat_min: 48.98, lat_max: 49.15}
+  before: ["2021-11-01", "2021-11-12"]
+  during: ["2021-11-14", "2021-11-30"]
+  late: ["2021-12-01", "2021-12-31"]
+
+# Stations chosen after name lookup + availability check (scripts/01_gauges.py --search/--check).
+# regime = my judgement from location/elevation (rain = coastal rain-fed, snow = interior snowmelt,
+# mixed = both); `nov2021: true` = river in the Nov 2021 event list. Regulation was judged from
+# station names only, NOT verified against STN_REGULATION; flagged as a limitation.
+stations:
+  - {id: "08MF068", src: eccc, name: "Coquihalla R above Alexander Cr", regime: rain,  nov2021: true}
+  - {id: "08LG010", src: eccc, name: "Coldwater R at Merritt",          regime: mixed, nov2021: true}
+  - {id: "08NL024", src: eccc, name: "Tulameen R at Princeton",         regime: snow,  nov2021: true}
+  - {id: "08NL038", src: eccc, name: "Similkameen R near Hedley",       regime: snow,  nov2021: true}
+  - {id: "08MH103", src: eccc, name: "Chilliwack R above Slesse Cr",    regime: rain}
+  - {id: "08HB002", src: eccc, name: "Englishman R near Parksville",    regime: rain}
+  - {id: "08MG001", src: eccc, name: "Chehalis R near Harrison Mills",  regime: rain}
+  - {id: "08LA001", src: eccc, name: "Clearwater R near Clearwater",    regime: snow}
+  - {id: "08LE020", src: eccc, name: "Salmon R at Falkland",            regime: snow}
+  - {id: "08NK002", src: eccc, name: "Elk R at Fernie",                 regime: snow}
+  - {id: "12213100", src: usgs, name: "Nooksack R at Ferndale, WA",     regime: mixed, nov2021: true}

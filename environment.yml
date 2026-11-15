@@ -1,0 +1,32 @@
+name: floodml
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pandas
+  - numpy
+  - pyarrow
+  - requests
+  - scipy
+  - scikit-learn
+  - lightgbm
+  - shap
+  - matplotlib
+  - pyyaml
+  - tqdm
+  - rasterio
+  - shapely
+  - geopandas
+  - xarray
+  - rioxarray
+  - pytest
+  - pip:
+      - pystac-client
+      - planetary-computer
+      - odc-stac
+      - segmentation-models-pytorch
+  # PyTorch with CUDA (RTX 3060) is installed separately, see README:
+  # (segmentation-models-pytorch pulls in a CPU torch, so force the CUDA build after env creation.)
+  # Verified on the RTX 3060 (cuda True):
+  #   pip install --force-reinstall --no-deps torch torchvision --index-url https://download.pytorch.org/whl/cu128

@@ -1,0 +1,9 @@
+data/
+.env
+.env.*
+__pycache__/
+*.pyc
+.pytest_cache/
+Sumas_Prairie_2021_Flood_Project.pdf
+.claude/
+CLAUDE.md

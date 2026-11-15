@@ -1,0 +1,24 @@
+pandas
+numpy
+pyarrow
+requests
+scipy
+scikit-learn
+lightgbm
+shap
+matplotlib
+pyyaml
+tqdm
+torch
+torchvision
+segmentation-models-pytorch
+rasterio
+pystac-client
+planetary-computer
+odc-stac
+xarray
+rioxarray
+shapely
+geopandas
+pytest
+# streamlit  (optional)
