@@ -3,9 +3,13 @@
 Quantile model: instead of one number, predict the 10%, 50% and 90% levels of tomorrow's flow
 (a forecast range). The 0.9 model is "pessimistic": the flow should stay below it 90% of the time.
 """
+import warnings
+
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
+
+warnings.filterwarnings("ignore", message=".*eval_set.*")  # harmless LightGBM renaming notice
 
 
 def persistence(df, k):
@@ -32,7 +36,7 @@ def climatology(df, flow_df, train_range, k, window=15):
 
 def train_quantile_models(Xtr, ytr, Xva, yva, quantiles, seed, params=None):
     """One LightGBM model per quantile (pinball loss), early-stopped on the validation years."""
-    p = dict(n_estimators=1500, learning_rate=0.03, num_leaves=31, min_child_samples=50,
+    p = dict(n_estimators=2000, learning_rate=0.06, num_leaves=31, min_child_samples=50,
              subsample=0.8, subsample_freq=1, colsample_bytree=0.8, reg_lambda=1.0,
              random_state=seed, verbose=-1, n_jobs=-1)
     p.update(params or {})

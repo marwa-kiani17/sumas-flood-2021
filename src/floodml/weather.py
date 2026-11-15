@@ -14,9 +14,10 @@ import pandas as pd
 import requests
 
 URL = "https://archive-api.open-meteo.com/v1/archive"
-DAILY = ["precipitation_sum", "rain_sum", "snowfall_sum",
-         "temperature_2m_max", "temperature_2m_min", "temperature_2m_mean"]
-HOURLY = ["snow_depth", "soil_moisture_0_to_7cm", "soil_moisture_7_to_28cm"]
+# Trimmed to cut API cost (free tier is billed by days x variables). The first 4 rivers were
+# downloaded earlier with two extra columns (temperature_2m_min, soil_moisture_7_to_28cm); unused.
+DAILY = ["precipitation_sum", "rain_sum", "snowfall_sum", "temperature_2m_max", "temperature_2m_mean"]
+HOURLY = ["snow_depth", "soil_moisture_0_to_7cm"]
 
 
 class RateLimited(Exception):
@@ -40,13 +41,16 @@ def basin_points(lat, lon, area_km2, n_points):
     return pts
 
 
-def fetch_chunk(lat, lon, start, end, raw_dir, tz, sleep=1.0, tries=8):
-    """One cached request (daily + hourly variables) for lat/lon between start and end."""
+def fetch_chunk(lat, lon, start, end, raw_dir, tz, sleep=1.0, tries=8, offline=False):
+    """One cached request (daily + hourly variables) for lat/lon between start and end.
+    offline=True: only read the cache, never call the API (raises FileNotFoundError if absent)."""
     raw_dir = Path(raw_dir)
     raw_dir.mkdir(parents=True, exist_ok=True)
     f = raw_dir / f"{lat:.3f}_{lon:.3f}_{start}_{end}.json"
     if f.exists():
         return json.loads(f.read_text())
+    if offline:
+        raise FileNotFoundError(f.name)
     params = dict(latitude=round(lat, 3), longitude=round(lon, 3), start_date=start, end_date=end,
                   daily=",".join(DAILY), hourly=",".join(HOURLY), timezone=tz)
     for i in range(tries):
@@ -75,7 +79,7 @@ def chunk_to_daily(js):
     return d.merge(hd, on="time", how="left").rename(columns={"time": "date"})
 
 
-def get_point_daily(lat, lon, start, end, raw_dir, tz, sleep=1.0, years_per_chunk=15):
+def get_point_daily(lat, lon, start, end, raw_dir, tz, sleep=1.0, years_per_chunk=15, offline=False):
     """Whole period for one point, in chunks of `years_per_chunk` years."""
     y0, y1 = int(start[:4]), int(end[:4])
     parts = []
@@ -83,5 +87,5 @@ def get_point_daily(lat, lon, start, end, raw_dir, tz, sleep=1.0, years_per_chun
         ye = min(ys + years_per_chunk - 1, y1)
         s = start if ys == y0 else f"{ys}-01-01"
         e = end if ye == y1 else f"{ye}-12-31"
-        parts.append(chunk_to_daily(fetch_chunk(lat, lon, s, e, raw_dir, tz, sleep)))
+        parts.append(chunk_to_daily(fetch_chunk(lat, lon, s, e, raw_dir, tz, sleep, offline=offline)))
     return pd.concat(parts).drop_duplicates("date").reset_index(drop=True)

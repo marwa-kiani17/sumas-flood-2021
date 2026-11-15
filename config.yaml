@@ -25,7 +25,9 @@ sources:
 
 openmeteo:
   sleep_seconds: 1.0
-  points_per_basin: 1       # 1 = gauge point only (free-tier limits); raise to 3-5 later, cached chunks are reused
+  # Download order (rivers not listed come last). Most important first, in case the rate limit stops us.
+  priority: ["12213100", "08MH103", "08MG001", "08HB002", "08LA001", "08NK002", "08LE020"]
+  points_per_basin: 1      # 1 = gauge point only (free-tier limits); raise to 3-5 later, cached chunks are reused
   timezone: "America/Vancouver"
 
 features:

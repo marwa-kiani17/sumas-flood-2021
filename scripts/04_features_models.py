@@ -35,6 +35,9 @@ flow = pd.read_parquet(INTERIM / "flow_daily.parquet")
 wx = pd.read_parquet(INTERIM / "weather_daily.parquet")
 stn = pd.read_csv(INTERIM / "stations.csv", dtype={"id": str})
 thr = pd.read_csv(PROC / "thresholds.csv", dtype={"id": str}).set_index("id")
+# Use only rivers that have weather (weather download may be partial because of API limits).
+stn = stn[stn["id"].isin(wx["station"].unique())].reset_index(drop=True)
+print("rivers used:", list(stn["id"]))
 
 df = build_all(flow, wx, stn, CFG)
 df["split"] = split_of(df["date"], CFG)

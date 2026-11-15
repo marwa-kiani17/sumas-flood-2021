@@ -38,7 +38,7 @@ def station_features(flow, wx, meta, ar_cfg, meanq):
     X["degday_7d"] = tm.clip(lower=0).rolling(7).sum()      # warmth available to melt snow
     X["snow_depth"] = d["snow_depth"]
     X["snow_depth_chg7"] = d["snow_depth"].diff(7)           # negative = melting
-    X["soil_0_7"], X["soil_7_28"] = d["soil_moisture_0_to_7cm"], d["soil_moisture_7_to_28cm"]
+    X["soil_0_7"] = d["soil_moisture_0_to_7cm"]
 
     ros = rain * ((d["snow_depth"] > 0.05) & (tm > 0))
     X["ros"], X["ros_3d"] = ros, ros.rolling(3).sum()
