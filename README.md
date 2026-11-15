@@ -18,16 +18,21 @@ the Nooksack River (Washington, USA) overflowed into the Sumas River basin and f
 
 ## Headline results (test years 2017-2023, never used for training)
 
-**Forecasting (10 rivers, median over rivers).**
+**Forecasting (11 rivers, median over rivers).**
 
 | Lead | NSE persistence | NSE climatology | NSE LightGBM | NSE LightGBM without future weather |
 |---|---|---|---|---|
-| 1 day | 0.81 | 0.41 | **0.92** | 0.90 |
-| 2 days | 0.64 | 0.41 | **0.89** | 0.77 |
-| 3 days | 0.54 | 0.41 | **0.86** | 0.69 |
+| 1 day | 0.84 | 0.44 | **0.93** | 0.90 |
+| 2 days | 0.69 | 0.44 | **0.91** | 0.79 |
+| 3 days | 0.60 | 0.44 | **0.89** | 0.71 |
 
-- Warning rule "0.9 quantile > 5-year flood": at 3 days ahead POD 0.66 / FAR 0.47 / CSI 0.42 versus persistence
-  0.39 / 0.61 / 0.24.
+- **Warnings (rule: 0.9 quantile > 5-year flood level) depend on the river type.** Pooled over all rivers the
+  model is only slightly better than persistence at 2-3 days (3 days: POD 0.54 / FAR 0.42 / CSI 0.38 versus 0.53 /
+  0.47 / 0.36), because 142 of the 162 flood days in the test years are slow snowmelt floods, where "tomorrow =
+  today" already works well (on the Salmon River persistence is clearly better). On rain-driven and mixed rivers,
+  the Nov 2021 type, the model clearly wins (3 days ahead: POD 0.73 on rain rivers and 0.56 on mixed rivers versus
+  0.00 for persistence), but these have only 11 and 9 test flood days and a high false alarm rate on rain rivers
+  (FAR 0.69). See `reports/results.md` (by-regime table).
 - **Nov 2021 replay:** with the (perfect-forecast) future weather the model warned **3 days earlier than persistence**
   on the Coquihalla, Coldwater, Tulameen and Nooksack. Without future weather the gain is 0-1 days. On the
   Similkameen no warning fired (see limitations).
@@ -40,7 +45,7 @@ the Nooksack River (Washington, USA) overflowed into the Sumas River basin and f
 |---|---|---|
 | Otsu threshold, per chip | 0.213 | 0.351 |
 | Otsu threshold, global (fit on train) | 0.461 | 0.631 |
-| **U-Net (ResNet-18)** | **0.663** | **0.798** |
+| **U-Net (ResNet-18)**, mean of 3 training seeds | **0.668 +/- 0.008** | **0.801 +/- 0.005** |
 
 **Sumas Prairie (Sentinel-1, relative orbit 13, same view geometry for every date).** About 19 km2 flooded on
 16 Nov 2021 (12 km2 within the 257 km2 region seen by every scene), falling to about 3 km2 by 22 Dec. Flooded area
@@ -60,8 +65,8 @@ Key figures in `reports/figures/`: `nov2021_replay_<river>.png`, `sumas_flood_ma
 | Radar | Sentinel-1 RTC via Microsoft Planetary Computer |
 | Training labels for the U-Net | Sen1Floods11 (Bonafilia et al., 2020), hand-labelled part only |
 
-Rivers (12 chosen, 10 used; the Salmon at Falkland was not downloaded because of Open-Meteo's free-tier limit):
-Coquihalla, Coldwater, Tulameen, Similkameen, Chilliwack, Englishman, Chehalis, Clearwater, Elk, Nooksack.
+Rivers (11): Coquihalla, Coldwater, Tulameen, Similkameen, Chilliwack, Englishman, Chehalis, Clearwater, Salmon
+(Falkland), Elk, Nooksack. (The Kettle River was dropped: a seasonal gauge that cannot give flood thresholds.)
 
 ## Method notes
 
@@ -83,18 +88,18 @@ Coquihalla, Coldwater, Tulameen, Similkameen, Chilliwack, Englishman, Chehalis, 
 - **Weather is one ERA5 point per basin** (the gauge) and has no IVT; the atmospheric river influence is a rain +
   warmth proxy. Real IVT / AR catalogues are future work.
 - **"Future weather" is observed reanalysis**, a perfect forecast. Real forecasts will be less accurate; without it
-  the 3-day skill drops (NSE 0.86 to 0.69).
+  the 3-day skill drops (NSE 0.89 to 0.71).
 - **Record peaks are under-predicted.** Tree models cannot go beyond the flows seen in training, and Nov 2021 broke
   records on several rivers (for example the Similkameen peak was 932 m3/s). The 10-90% ranges also cover only about
   72-75% of observations instead of 80%.
-- **Attempted fix: LightGBM linear leaves** (can extrapolate in principle). Result: modestly better warnings
-  (POD 0.83/0.77/0.72 and CSI 0.61/0.46/0.44 at 1/2/3 days versus 0.80/0.74/0.66 and 0.54/0.49/0.42) and slightly
-  better 10-90% coverage (0.77/0.75/0.73), but slightly lower NSE (0.906/0.866/0.842 versus 0.924/0.894/0.864) and
-  **no improvement in peak size** (median error -16/-23/-26% versus -14/-17/-21%). Nov 2021 peaks are still
-  under-predicted by roughly 40-60% (Similkameen: median forecast 360 versus observed 932 m3/s), and the linear model
-  only warned on the Similkameen on the same day as persistence. The validation years contain no record floods, so
-  early stopping cannot tune extrapolation. The default model stays the standard LightGBM; the linear variant is
-  reported for comparison (`reports/results.md`).
+- **Attempted fix: LightGBM linear leaves** (can extrapolate in principle). Result (11 rivers): modestly better
+  warnings (POD 0.88/0.72/0.68 and CSI 0.69/0.50/0.46 at 1/2/3 days versus 0.81/0.67/0.54 and 0.59/0.50/0.38) and
+  slightly better 10-90% coverage (0.77/0.75/0.73 versus 0.75/0.73/0.72), but slightly lower NSE
+  (0.92/0.89/0.86 versus 0.93/0.91/0.89) and **no real improvement in peak size** (median error -13/-19/-23% versus
+  -14/-17/-21%). Nov 2021 peaks are still under-predicted by roughly 40-60% (Similkameen: median forecast about 360
+  versus observed 932 m3/s), and the linear model only warned on the Similkameen on the same day as persistence.
+  The validation years contain no record floods, so early stopping cannot tune extrapolation. The default model
+  stays the standard LightGBM; the linear variant is reported for comparison (`reports/results.md`).
 - Regulation of the gauges was judged from station names only. Several gauges failed or were estimated in Nov 2021.
 - The U-Net is trained on global flood chips, not BC farmland. It under-maps the solid flooded area on Sumas Prairie
   (flooded fields can look partly rough), and radar confuses flat wet fields and wet snow with water. The four
@@ -119,8 +124,27 @@ python scripts/06_cv_train.py                # Otsu + U-Net
 python scripts/07_sumas_maps.py --map        # Sentinel-1 flood maps of Sumas Prairie
 python scripts/08_area_vs_level.py           # flooded area vs level
 python scripts/09_report.py                  # reports/results.md
+python scripts/10_explain_figures.py         # docs figures + reports/evaluation_matrix.md
 python -m pytest tests -q
+
+python scripts/06_cv_train.py --seed 1       # extra seeds for the U-Net error bar (outputs get a _seedN suffix)
+python scripts/05_replay_shap.py linear      # Nov 2021 replay for the linear-leaf variant
+
+pip install streamlit                        # optional viewer
+streamlit run app/streamlit_app.py
 ```
+
+## Documentation for readers
+
+| File | What it is |
+|---|---|
+| `docs/PROJECT_EXPLAINED.md` | The whole project in the simplest words, with pictures |
+| `docs/PROJECT_DETAILS.md` | Complete technical walkthrough: every step, setting, formula, number and deviation from the plan |
+| `docs/METRICS_EXPLAINED.md` | Every score explained simply, with toy examples |
+| `reports/evaluation_matrix.md` | One table with all scores and our results |
+| `docs/CHALLENGES.md` | Problems hit during development and how each was solved |
+| `docs/PROPOSAL_SUMMARY.md` | One-page summary and short research proposal |
+| `reports/results.md` | All result tables (generated) |
 
 Station IDs are looked up by name with `python scripts/01_gauges.py --search "NAME"` and checked with `--check`.
 All settings are in `config.yaml`; seeds are fixed. Downloaded data lives in `data/` (git-ignored).

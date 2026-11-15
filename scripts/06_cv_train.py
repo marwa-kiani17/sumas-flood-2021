@@ -41,15 +41,18 @@ for p in (PROC, FIG):
 ap = argparse.ArgumentParser()
 ap.add_argument("--download", action="store_true")
 ap.add_argument("--epochs", type=int, default=CV["epochs"])
+ap.add_argument("--seed", type=int, default=None, help="extra seed for an error bar; outputs get a _seedN suffix")
 a = ap.parse_args()
+SEED = CFG["seed"] if a.seed is None else a.seed
+SUF = "" if a.seed is None else f"_seed{a.seed}"   # extra seeds never overwrite the original results
 
 if a.download:
     pairs = download(RAW)
     print({k: len(v) for k, v in pairs.items()}, "chips downloaded to", RAW)
     sys.exit()
 
-torch.manual_seed(CFG["seed"])
-np.random.seed(CFG["seed"])
+torch.manual_seed(SEED)
+np.random.seed(SEED)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print("device:", device)
 pairs = {s: split_pairs(RAW, s) for s in ("train", "valid", "test")}
@@ -73,13 +76,15 @@ print(f"global Otsu threshold = {global_thr:.1f} dB")
 dl = lambda ds, shuffle: DataLoader(ds, batch_size=CV["batch_size"], shuffle=shuffle, num_workers=0)
 tr_ds, va_ds, te_ds = (FloodChips(pairs[s], augment=(s == "train")) for s in ("train", "valid", "test"))
 model = make_unet(pretrained=True)
-model, hist = train(model, dl(tr_ds, True), dl(va_ds, False), a.epochs, CV["lr"], device, PROC / "unet_resnet18.pt")
-pd.DataFrame(hist).to_csv(REP / "tables_cv_training.csv", index=False)
+model, hist = train(model, dl(tr_ds, True), dl(va_ds, False), a.epochs, CV["lr"], device, PROC / f"unet_resnet18{SUF}.pt")
+pd.DataFrame(hist).to_csv(REP / f"tables_cv_training{SUF}.csv", index=False)
 res["U-Net (ResNet-18)"] = scores(*predict_loader(model, dl(te_ds, False), device))
 
 tab = pd.DataFrame(res).T.round(3)
-tab.to_csv(REP / "tables_cv.csv")
+tab.to_csv(REP / f"tables_cv{SUF}.csv")
 print("\nTEST SET (water class):\n", tab.to_string())
+if SUF:  # extra seed: tables only, no example figure
+    sys.exit()
 
 # ---------- example figure: first 4 test chips with water ----------
 idx = [i for i, (_, _, y) in enumerate(test_raw) if (y == 1).mean() > 0.05][:4]

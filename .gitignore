@@ -1,4 +1,5 @@
 data/
+logs/
 .env
 .env.*
 __pycache__/

@@ -56,6 +56,13 @@ if pe is not None:
                                             median_abs_timing_days=("timing_err_days", lambda s: s.abs().median())).reset_index()
     out += ["### Peak size and timing error for floods above Q2 (median model; negative = under-predicted)\n", md(g, 2), ""]
 
+reg = read("tables_warning_by_regime.csv")
+if reg is not None:
+    out += ["### Warning scores by river regime (rule: 0.9 quantile > Q5), model vs persistence\n",
+            "Pooled scores are dominated by slow snowmelt floods, where 'tomorrow = today' works well. Rain-driven "
+            "rivers (the Nov 2021 type) have few flood days in the test years, so read those rows as indicative.\n",
+            md(reg, 2), ""]
+
 nov = read("tables_nov2021_warning.csv", dtype={"river": str})
 if nov is not None:
     out += ["### November 2021 replay: first day the warning fired (issue date)\n",
@@ -79,6 +86,12 @@ cv = read("tables_cv.csv")
 if cv is not None:
     cv = cv.rename(columns={cv.columns[0]: "method"})
     out += ["## Part A: flood water mapping (Sen1Floods11 test chips, water class)\n", md(cv), ""]
+seed_files = [REP / "tables_cv.csv"] + sorted(REP.glob("tables_cv_seed*.csv"))
+if len(seed_files) > 1:
+    unet = pd.DataFrame([pd.read_csv(p, index_col=0).loc["U-Net (ResNet-18)"] for p in seed_files])
+    unet.index = ["seed " + (p.stem.replace("tables_cv_seed", "") or "42 (default)") for p in seed_files]
+    summ = pd.DataFrame({"mean": unet.mean(), "std": unet.std()}).T
+    out += [f"### U-Net spread over {len(seed_files)} training seeds (test chips)\n", md(unet, 3), "", md(summ, 3), ""]
 area = read("sumas_area.csv")
 if area is not None:
     out += ["### Sumas Prairie flooded area from Sentinel-1 (orbit 13), km2\n",
